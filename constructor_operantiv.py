@@ -7,74 +7,84 @@ st.markdown("### Визначення типу вербального опера
 
 if 'step' not in st.session_state:
     st.session_state.step = 0
-if 'path' not in st.session_state:
-    st.session_state.path = []
+if 'result' not in st.session_state:
+    st.session_state.result = None
 
-questions = [
-    "1. Чи присутні **мотиваційні умови** (мотивація, депривація, EO)?",
-    "2. Чи присутній **невербальний дискримінативний стимул** (предмет, картинка, подія)?",
-    "3. Чи присутній **вербальний дискримінативний стимул** (слово, фраза, інструкція)?",
-    "4. Чи є **буквальна відповідність** (точне повторення стимулу)?",
-    "5. Чи є **формальна схожість** між стимулом і відповіддю?"
-]
+def show_result(name, explanation, emoji):
+    st.session_state.result = {"name": name, "explanation": explanation, "emoji": emoji}
 
-if st.session_state.step < len(questions):
-    st.subheader(f"Питання {st.session_state.step + 1}")
-    st.markdown(f"**{questions[st.session_state.step]}**")
-    
+def answer(yes):
+    step = st.session_state.step
+
+    if step == 0:  # Q1: Мотиваційні умови?
+        if yes:
+            show_result("МАНД", "Оперант під контролем мотиваційних умов. Людина просить те, чого хоче.", "🔊")
+        else:
+            st.session_state.step = 1
+
+    elif step == 1:  # Q2: Невербальний Sd?
+        if yes:
+            show_result("ТАКТ", "Оперант під контролем невербального дискримінативного стимулу. Людина називає те, що бачить.", "🖼️")
+        else:
+            st.session_state.step = 2
+
+    elif step == 2:  # Q3: Вербальний Sd?
+        if not yes:
+            show_result("ІНТРАВЕРБАЛІЗАЦІЯ", "Відповідь на вербальний стимул без буквальної відповідності стимулу.", "💬")
+        else:
+            st.session_state.step = 3
+
+    elif step == 3:  # Q4: Буквальна відповідність?
+        if not yes:
+            show_result("ІНТРАВЕРБАЛІЗАЦІЯ", "Відповідь на вербальний стимул без буквальної відповідності стимулу.", "💬")
+        else:
+            st.session_state.step = 4
+
+    elif step == 4:  # Q5: Формальна схожість?
+        if yes:
+            show_result("ЕХО", "Повторення почутого — формальна схожість між стимулом і відповіддю.", "🔁")
+        else:
+            st.session_state.step = 5
+
+    elif step == 5:  # Q6: Письмовий Sd?
+        if yes:
+            show_result("ПРОЧИТУВАННЯ", "Письмовий стимул → усна відповідь. Людина читає вголос.", "📖")
+        else:
+            show_result("ТРАНСКРИПЦІЯ", "Усний стимул → письмова відповідь. Людина записує почуте.", "📝")
+
+def reset():
+    st.session_state.step = 0
+    st.session_state.result = None
+
+# --- Показуємо результат ---
+if st.session_state.result:
+    r = st.session_state.result
+    st.success(f"{r['emoji']} **Оперант: {r['name']}**")
+    st.markdown(f"> {r['explanation']}")
+    st.divider()
+    st.button("🔄 Пройти заново", type="primary", on_click=reset)
+
+# --- Показуємо питання ---
+else:
+    questions = {
+        0: ("Питання 1", "Чи присутні **мотиваційні умови** (мотивація, депривація, EO)?"),
+        1: ("Питання 2", "Чи присутній **невербальний дискримінативний стимул** (предмет, картинка, подія)?"),
+        2: ("Питання 3", "Чи присутній **вербальний дискримінативний стимул** (слово, фраза, інструкція)?"),
+        3: ("Питання 4", "Чи є **буквальна відповідність** (точне повторення стимулу)?"),
+        4: ("Питання 5", "Чи є **формальна схожість** між стимулом і відповіддю?"),
+        5: ("Питання 6", "Чи є стимул **письмовим** (текст, символи)?"),
+    }
+
+    step = st.session_state.step
+    label, question = questions[step]
+
+    st.subheader(label)
+    st.markdown(f"**{question}**")
+
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("✅ Так", use_container_width=True, type="primary"):
-            st.session_state.path.append("Так")
-            st.session_state.step += 1
-            st.rerun()
+        st.button("✅ Так", use_container_width=True, type="primary", on_click=answer, args=(True,))
     with col2:
-        if st.button("❌ Ні", use_container_width=True):
-            st.session_state.path.append("Ні")
-            st.session_state.step += 1
-            st.rerun()
-
-else:
-    # === ПРАВИЛЬНА ЛОГІКА ЗА ДІАГРАМОЮ ===
-    answers = st.session_state.path
-    result = ""
-    explanation = ""
-
-    if len(answers) > 0 and answers[0] == "Так":
-        result = "МАНД"
-        explanation = "🔊 **Манд** — оперант під контролем мотиваційних умов. Людина просить те, чого хоче."
-
-    elif len(answers) > 1 and answers[1] == "Так":
-        result = "ТАКТ"
-        explanation = "🖼️ **Такт** — оперант під контролем невербального дискримінативного стимулу. Людина називає те, що бачить."
-
-    elif len(answers) > 2 and answers[2] == "Ні":
-        result = "ТРАНСКРИПЦІЯ або ПРОЧИТУВАННЯ"
-        explanation = "📝 **Транскрипція або Прочитування** — оперант під контролем письмового або аудіального стимулу без мотивації та невербального стимулу."
-
-    elif len(answers) > 2 and answers[2] == "Так":
-        if len(answers) > 3 and answers[3] == "Ні":
-            result = "ІНТРАВЕРБАЛІЗАЦІЯ"
-            explanation = "💬 **Інтравербалізація** — відповідь на вербальний стимул без буквальної відповідності."
-        else:
-            # Питання 5
-            if len(answers) > 4 and answers[4] == "Так":
-                result = "ЕХО"
-                explanation = "🔁 **Ехо** — повторення почутого (формальна схожість з вербальним стимулом)."
-            else:
-                result = "ІНТРАВЕРБАЛІЗАЦІЯ"
-                explanation = "💬 **Інтравербалізація** — вербальний стимул без формальної схожості."
-
-    st.success(f"**Оперант: {result}**")
-    st.markdown(explanation)
-
-    st.markdown("### Ваш шлях відповідей:")
-    for i, ans in enumerate(answers, 1):
-        st.write(f"{i}. **{ans}**")
-
-    if st.button("🔄 Пройти заново", type="primary"):
-        st.session_state.step = 0
-        st.session_state.path = []
-        st.rerun()
+        st.button("❌ Ні", use_container_width=True, on_click=answer, args=(False,))
 
 st.caption("Конструктор оперантів • Логіка відповідає діаграмі")

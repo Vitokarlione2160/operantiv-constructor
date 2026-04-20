@@ -1,8 +1,9 @@
 import streamlit as st
 
-st.set_page_config(page_title="Конструктор оперантів", layout="centered")
+st.set_page_config(page_title="Конструктор оперантів", layout="centered", page_icon="🧩")
+
 st.title("🧩 Конструктор оперантів")
-st.markdown("### Визначення типу вербального операнту за схемою")
+st.markdown("### Визначення типу вербального операнту за схемою Скінера")
 
 # Ініціалізація
 if 'step' not in st.session_state:
@@ -18,62 +19,70 @@ questions = [
     "Чи є **формальна схожість** між стимулом і відповіддю?"
 ]
 
-def get_operant_result():
-    path = "".join(st.session_state.path)
+def get_result():
+    answers = st.session_state.path
     
-    if st.session_state.path[0] == "Так":
-        return "МАНД", "Оперант під контролем мотиваційних умов."
+    if answers and answers[0] == "Так":
+        return "МАНД", "🔊 **Манд** — оперант, контрольований мотиваційними умовами. Дитина просить те, чого хоче."
     
-    elif len(st.session_state.path) >= 2 and st.session_state.path[1] == "Так":
-        return "ТАКТ", "Оперант під контролем невербального дискримінативного стимулу."
+    elif len(answers) >= 2 and answers[1] == "Так":
+        return "ТАКТ", "🖼️ **Такт** — оперант, контрольований невербальним стимулом (предметом або подією). Дитина називає те, що бачить."
     
-    elif len(st.session_state.path) >= 3 and st.session_state.path[2] == "Так":
-        if len(st.session_state.path) >= 4 and st.session_state.path[3] == "Ні":
-            return "ІНТРАВЕРБАЛІЗАЦІЯ", "Вербальний стимул без формальної схожості."
-        elif len(st.session_state.path) >= 5 and st.session_state.path[4] == "Так":
-            return "ЕХО", "Формальна схожість з вербальним стимулом."
+    elif len(answers) >= 3 and answers[2] == "Так":
+        if len(answers) >= 4 and answers[3] == "Ні":
+            return "ІНТРАВЕРБАЛІЗАЦІЯ", "💬 **Інтравербалізація** — відповідь на вербальний стимул без формальної схожості (розмова, відповідь на питання)."
+        elif len(answers) >= 5 and answers[4] == "Так":
+            return "ЕХО", "🔁 **Ехо** — повторення почутого (імітація вербального стимулу)."
         else:
-            return "ЕХО", "Формальна схожість з вербальним стимулом."
+            return "ЕХО", "🔁 **Ехо** — повторення почутого."
     
     else:
-        # Якщо дійшли до кінця без попередніх гілок
-        return "ТРАНСКРИПЦІЯ або ПРОЧИТУВАННЯ", "Оперант під контролем письмового або аудіального вербального стимулу без формальної схожості."
+        return "ТРАНСКРИПЦІЯ або ПРОЧИТУВАННЯ", "📝 **Транскрипція / Прочитування** — запис сказаного або читання тексту."
 
-# Відображення прогресу
-progress = min(st.session_state.step / len(questions) * 100, 100)
+# Дизайн
+st.markdown("---")
+
+# Прогрес
+progress = min((st.session_state.step / len(questions)) * 100, 100)
 st.progress(progress / 100)
+st.caption(f"Питання {st.session_state.step + 1} з {len(questions)}")
 
 # Основна логіка
 if st.session_state.step < len(questions):
-    st.subheader(f"Питання {st.session_state.step + 1} з {len(questions)}")
-    st.write(questions[st.session_state.step])
+    st.subheader(f"Питання {st.session_state.step + 1}")
+    st.markdown(f"**{questions[st.session_state.step]}**")
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("✅ Так", type="primary", use_container_width=True):
+        if st.button("✅ Так", use_container_width=True, type="primary"):
             st.session_state.path.append("Так")
             st.session_state.step += 1
             st.rerun()
     with col2:
-        if st.button("❌ Ні", type="secondary", use_container_width=True):
+        if st.button("❌ Ні", use_container_width=True, type="secondary"):
             st.session_state.path.append("Ні")
             st.session_state.step += 1
             st.rerun()
 
 else:
     # Результат
-    operant, explanation = get_operant_result()
+    operant, explanation = get_result()
     
     st.success(f"**Оперант: {operant}**")
-    st.info(explanation)
+    st.markdown(explanation)
     
-    st.write("### Ваш шлях відповідей:")
+    st.markdown("### Ваш шлях відповідей:")
     for i, ans in enumerate(st.session_state.path, 1):
-        st.write(f"{i}. {ans}")
+        st.write(f"{i}. **{ans}**")
     
-    if st.button("🔄 Пройти заново", type="primary"):
-        st.session_state.step = 0
-        st.session_state.path = []
-        st.rerun()
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 Пройти заново", type="primary", use_container_width=True):
+            st.session_state.step = 0
+            st.session_state.path = []
+            st.rerun()
+    with col2:
+        if st.button("📋 Скопіювати результат", use_container_width=True):
+            st.code(f"Оперант: {operant}\n{explanation}", language=None)
 
-st.caption("Конструктор оперантів • Логіка повністю відповідає діаграмі")
+st.caption("Конструктор оперантів • Створено для ABA-терапії")
